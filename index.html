@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Draft Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F1F3EE; --card:#FFFFFF; --ink:#14201B; --muted:#5D6B64;
+  --line:#DCE2DB; --line2:#EDF0EA;
+  --flag:#F2B705; --flag-dim:#FDF3D2;
+  --deep:#123F5E; --deep-soft:#E4EDF3;
+  --good:#1B7F5A; --warn:#C77B12; --bad:#B23A2E;
+  --qb:#7A3E9D; --rb:#1B7F5A; --wr:#2563A8; --te:#C2701C; --k:#6B7280; --dst:#4B5563; --dp:#8A5A2B;
+  --qb-s:#F4EAFA; --rb-s:#E3F4ED; --wr-s:#E5F0FB; --te-s:#FCF0E1; --k-s:#EFF1F3; --dst-s:#EEF0F2; --dp-s:#F7EDE2;
+  --r:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,sans-serif; font-size:14px; line-height:1.45;
+  -webkit-text-size-adjust:100%;
+}
+button,input,select{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.disp{font-family:"Oswald",sans-serif;font-weight:600;letter-spacing:.01em}
+.eyebrow{font-family:"Oswald",sans-serif;font-weight:500;text-transform:uppercase;letter-spacing:.13em;font-size:11px;color:var(--muted)}
+
+/* ---------- shell ---------- */
+.wrap{max-width:1320px;margin:0 auto;padding:0 16px 80px}
+header.top{position:sticky;top:0;z-index:40;background:var(--paper);border-bottom:1px solid var(--line);padding-top:10px}
+.brandrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{font-family:"Oswald",sans-serif;font-weight:700;font-size:22px;letter-spacing:.06em;text-transform:uppercase;margin:0}
+.brand span{color:var(--flag)}
+.leaguetabs{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.ltab{border:1px solid var(--line);background:var(--card);padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:500}
+.ltab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.iconbtn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:5px 11px;font-size:12.5px;font-weight:500}
+.iconbtn:hover{border-color:var(--muted)}
+.iconbtn.warn:hover{border-color:var(--bad);color:var(--bad)}
+
+/* ---------- signature: pick ribbon ---------- */
+.ribbon{display:flex;align-items:stretch;gap:14px;padding:12px 0 12px;overflow:hidden}
+.clock{flex:0 0 auto;display:flex;align-items:baseline;gap:10px;padding-right:16px;border-right:2px solid var(--ink)}
+.clocknum{font-family:"Oswald",sans-serif;font-weight:700;font-size:52px;line-height:.85;letter-spacing:-.02em}
+.clocknum.now{color:var(--flag)}
+.clocklab{max-width:112px}
+.clocklab .l1{font-family:"Oswald",sans-serif;text-transform:uppercase;letter-spacing:.1em;font-size:11px;color:var(--muted);line-height:1.3}
+.flow{flex:1;display:flex;gap:3px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.fp{flex:0 0 auto;min-width:56px;border:1px solid var(--line);background:var(--card);border-radius:6px;padding:4px 6px;text-align:center}
+.fp .n{font-size:10px;color:var(--muted);font-family:"IBM Plex Mono",monospace}
+.fp .t{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:74px}
+.fp.mine{background:var(--flag);border-color:#D9A404}
+.fp.mine .n{color:#6b5300}
+.fp.done{opacity:.4}
+.fp.oc{outline:2px solid var(--ink);outline-offset:-2px}
+
+/* ---------- layout ---------- */
+.cols{display:grid;grid-template-columns:1fr 372px;gap:18px;margin-top:16px;align-items:start}
+@media (max-width:1000px){.cols{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r)}
+.card.acc-blue>h3{box-shadow:inset 0 3px 0 var(--deep)}
+.card.acc-gold>h3{box-shadow:inset 0 3px 0 var(--flag)}
+.card.acc-green>h3{box-shadow:inset 0 3px 0 var(--rb)}
+.card.acc-plum>h3{box-shadow:inset 0 3px 0 var(--qb)}
+.card.acc-slate>h3{box-shadow:inset 0 3px 0 var(--dst)}
+.card>h3{margin:0;padding:13px 14px 11px;border-bottom:1px solid var(--line2);font-family:"Oswald",sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.09em;font-size:12px;display:flex;align-items:center;gap:8px}
+.card>h3 .sub{margin-left:auto;font-family:"IBM Plex Sans";text-transform:none;letter-spacing:0;font-weight:400;font-size:11.5px;color:var(--muted)}
+
+/* ---------- controls ---------- */
+.controls{display:flex;gap:8px;padding:10px 12px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line2)}
+input[type=text],input[type=number],select{border:1px solid var(--line);border-radius:7px;padding:6px 9px;background:#fff}
+input[type=text]:focus,input[type=number]:focus,select:focus{outline:2px solid var(--deep);outline-offset:0;border-color:var(--deep)}
+#search{flex:1;min-width:150px}
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:500}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip.on[data-p=QB]{background:var(--qb);border-color:var(--qb)}
+.chip.on[data-p=RB]{background:var(--rb);border-color:var(--rb)}
+.chip.on[data-p=WR]{background:var(--wr);border-color:var(--wr)}
+.chip.on[data-p=TE]{background:var(--te);border-color:var(--te)}
+.chip.on[data-p=K]{background:var(--k);border-color:var(--k)}
+.chip.on[data-p=DST]{background:var(--dst);border-color:var(--dst)}
+.chip.on[data-p=DP]{background:var(--dp);border-color:var(--dp)}
+
+/* ---------- player rows ---------- */
+.rows{max-height:64vh;overflow-y:auto}
+.row{display:grid;grid-template-columns:34px 1fr 62px 54px 46px 30px;gap:9px;align-items:center;padding:7px 12px;border-bottom:1px solid var(--line2)}
+.row{border-left:3px solid transparent}
+.row.p-QB{border-left-color:var(--qb)} .row.p-RB{border-left-color:var(--rb)}
+.row.p-WR{border-left-color:var(--wr)} .row.p-TE{border-left-color:var(--te)}
+.row.p-K{border-left-color:var(--k)}   .row.p-DST{border-left-color:var(--dst)}
+.row.p-DP{border-left-color:var(--dp)}
+.row.p-QB:hover{background:var(--qb-s)} .row.p-RB:hover{background:var(--rb-s)}
+.row.p-WR:hover{background:var(--wr-s)} .row.p-TE:hover{background:var(--te-s)}
+.row.p-K:hover{background:var(--k-s)}   .row.p-DST:hover{background:var(--dst-s)}
+.row.p-DP:hover{background:var(--dp-s)}
+.row .rk{font-size:11.5px;color:var(--muted);font-family:"IBM Plex Mono",monospace}
+.nm{font-weight:600;line-height:1.2;cursor:pointer}
+.nm:hover{text-decoration:underline}
+.meta{font-size:11px;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.pos{font-family:"Oswald",sans-serif;font-weight:600;font-size:10.5px;letter-spacing:.06em;padding:1px 5px;border-radius:4px;color:#fff}
+.pos.QB{background:var(--qb)}.pos.RB{background:var(--rb)}.pos.WR{background:var(--wr)}
+.pos.TE{background:var(--te)}.pos.K{background:var(--k)}.pos.DST{background:var(--dst)}.pos.DP{background:var(--dp)}
+.num{text-align:right;font-family:"IBM Plex Mono",monospace;font-size:12.5px}
+.surv{display:flex;align-items:center;gap:5px;justify-content:flex-end;font-family:"IBM Plex Mono",monospace;font-size:11.5px}
+.dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+.take{border:1px solid var(--line);background:#fff;border-radius:6px;width:28px;height:26px;font-size:15px;line-height:1;padding:0}
+.take:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+.assign{border:none;background:none;color:var(--muted);font-size:11px;padding:0 2px}
+.assign:hover{color:var(--ink);text-decoration:underline}
+.cliff{border-bottom:2px solid var(--flag)}
+
+/* ---------- recs ---------- */
+.rec{padding:11px 13px;border-bottom:1px solid var(--line2)}
+.rec:last-child{border-bottom:none}
+.rec.top{background:linear-gradient(180deg,var(--flag-dim),#fff)}
+.rec.p-QB{border-left:4px solid var(--qb)} .rec.p-RB{border-left:4px solid var(--rb)}
+.rec.p-WR{border-left:4px solid var(--wr)} .rec.p-TE{border-left:4px solid var(--te)}
+.rec.p-K{border-left:4px solid var(--k)}   .rec.p-DST{border-left:4px solid var(--dst)}
+.rec.p-DP{border-left:4px solid var(--dp)}
+.rechead{display:flex;align-items:baseline;gap:8px}
+.recrank{font-family:"Oswald",sans-serif;font-weight:700;font-size:15px;color:var(--muted);min-width:16px}
+.recname{font-family:"Oswald",sans-serif;font-weight:600;font-size:17px;letter-spacing:.01em}
+.recwhy{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4}
+.bars{margin-top:6px;height:5px;background:var(--line2);border-radius:3px;overflow:hidden}
+.bars i{display:block;height:100%;background:var(--deep)}
+.recbtn{margin-top:7px;border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:7px;padding:5px 12px;font-size:12.5px;font-weight:600}
+.recbtn:hover{background:#000}
+
+/* ---------- roster ---------- */
+.slotline{display:grid;grid-template-columns:52px 1fr auto;gap:8px;padding:5px 13px;border-bottom:1px solid var(--line2);align-items:center;font-size:12.5px}
+.slotline .sl{font-family:"Oswald",sans-serif;font-size:11px;letter-spacing:.07em;color:var(--muted);text-transform:uppercase}
+.empty{color:#A9B4AC;font-style:italic}
+.byewarn{color:var(--bad);font-size:11px;font-weight:600}
+
+/* ---------- setup ---------- */
+.setup{padding:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px}
+label.f{display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px;font-weight:500}
+.f input,.f select{width:100%}
+fieldset{border:1px solid var(--line);border-radius:8px;padding:11px 12px;margin:0 0 12px}
+legend{font-family:"Oswald",sans-serif;text-transform:uppercase;letter-spacing:.1em;font-size:11px;color:var(--muted);padding:0 6px}
+.slotgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:6px}
+.slotpick{display:flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:7px;padding:4px 7px;background:#fff}
+.slotpick.mine{border-color:var(--flag);background:var(--flag-dim)}
+.slotpick .n{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);width:18px}
+.slotpick input[type=text]{border:none;padding:2px 0;flex:1;min-width:0;background:transparent}
+.slotpick input[type=text]:focus{outline:none;border-bottom:1px solid var(--deep)}
+.btn{border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:8px;padding:8px 16px;font-weight:600}
+.btn.ghost{background:#fff;color:var(--ink)}
+.hint{font-size:11.5px;color:var(--muted);margin-top:5px}
+textarea{width:100%;min-height:110px;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:"IBM Plex Mono",monospace;font-size:12px}
+
+/* ---------- pick ownership grid ---------- */
+.pickgrid{display:flex;flex-direction:column;gap:3px;max-height:300px;overflow:auto;padding:3px;border:1px solid var(--line2);border-radius:8px;background:#FBFCFA}
+.pgrow{display:flex;gap:3px;align-items:center}
+.pgr{font-family:"Oswald",sans-serif;font-size:10px;letter-spacing:.06em;color:var(--muted);flex:0 0 28px}
+.pgc{flex:0 0 auto;width:25px;height:22px;border:1px solid var(--line);background:#fff;border-radius:4px;font-size:10.5px;padding:0;color:#9AA69F;font-family:"IBM Plex Mono",monospace}
+.pgc:hover{border-color:var(--ink);color:var(--ink)}
+.pgc.on{background:var(--flag);border-color:#C79A04;color:#5B4600;font-weight:700}
+.pgc.gone{opacity:.35}
+
+/* ---------- room watch ---------- */
+.rw{width:100%;border-collapse:collapse;font-size:12.5px}
+.rw th{text-align:left;font-family:"Oswald",sans-serif;font-weight:500;text-transform:uppercase;
+  letter-spacing:.09em;font-size:10px;color:var(--muted);padding:7px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.rw td{padding:8px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
+.rw tr.soon{background:linear-gradient(90deg,var(--flag-dim),transparent)}
+.rw .who{font-weight:600}
+.rw .pk{font-family:"IBM Plex Mono",monospace;color:var(--muted);font-size:11.5px}
+.shape{display:flex;gap:3px;flex-wrap:wrap}
+.shape span{font-family:"IBM Plex Mono",monospace;font-size:10.5px;padding:1px 5px;border-radius:4px;color:#fff}
+.tgt{display:flex;gap:6px;align-items:baseline;line-height:1.4;margin-bottom:2px}
+.tgt .r{font-size:11px;color:var(--muted)}
+@media (max-width:700px){.rw .hidesm{display:none}}
+
+/* ---------- misc ---------- */
+.log{max-height:220px;overflow-y:auto;font-size:12px}
+.logrow{display:grid;grid-template-columns:44px 1fr auto;gap:8px;padding:4px 13px;border-bottom:1px solid var(--line2)}
+.logrow .p{font-family:"IBM Plex Mono",monospace;color:var(--muted);font-size:11px}
+.tag{font-size:10.5px;border:1px solid var(--line);border-radius:999px;padding:1px 7px;color:var(--muted)}
+.tag.hot{border-color:var(--flag);background:var(--flag-dim);color:#7a5f00}
+.tag.hurt{border-color:var(--bad);background:#FBEAE7;color:var(--bad);font-weight:600}
+.footer{margin-top:22px;font-size:11.5px;color:var(--muted);line-height:1.6}
+.hidden{display:none!important}
+dialog{border:1px solid var(--line);border-radius:12px;padding:0;max-width:560px;width:92%}
+dialog::backdrop{background:rgba(20,32,27,.35)}
+.dlg{padding:16px}
+.dlg h4{margin:0 0 10px;font-family:"Oswald",sans-serif;text-transform:uppercase;letter-spacing:.09em;font-size:13px}
+@media (prefers-reduced-motion:no-preference){.fp,.row{transition:background .12s ease}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="brandrow">
+    <h1 class="brand">Draft<span>.</span>Room</h1>
+    <div class="leaguetabs" id="leaguetabs"></div>
+    <button class="iconbtn" id="btnSetup">Settings</button>
+    <button class="iconbtn" id="btnUndo">Undo pick</button>
+    <button class="iconbtn" id="btnData">Data</button>
+  </div>
+  <div class="ribbon" id="ribbon"></div>
+</header>
+
+<!-- SETUP -->
+<section id="setupView" class="card hidden" style="margin-top:16px">
+  <h3>League setup <span class="sub" id="setupName"></span></h3>
+  <div class="setup" id="setupBody"></div>
+</section>
+
+<!-- DRAFT -->
+<div class="cols" id="draftView">
+  <div>
+    <div class="card acc-blue">
+      <h3>Board <span class="sub" id="boardSub"></span></h3>
+      <div class="controls">
+        <input type="text" id="search" placeholder="Search a player, then tap → to log the pick">
+        <div class="chips" id="posChips"></div>
+        <label style="font-size:12px;display:flex;align-items:center;gap:5px;color:var(--muted)">
+          <input type="checkbox" id="showDrafted"> show drafted
+        </label>
+      </div>
+      <div class="rows" id="rows"></div>
+    </div>
+    <div class="card acc-slate" style="margin-top:16px">
+      <h3>Pick log <span class="sub" id="logSub"></span></h3>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card acc-gold">
+      <h3 id="recHead">Best available</h3>
+      <div id="recs"></div>
+    </div>
+    <div class="card acc-green" style="margin-top:16px">
+      <h3>My roster <span class="sub" id="rosterSub"></span></h3>
+      <div id="roster"></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3>Run on positions <span class="sub">last 12 picks</span></h3>
+      <div id="runs" style="padding:11px 13px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card acc-plum" id="roomCard" style="margin-top:16px">
+  <h3>Room watch <span class="sub" id="roomSub">what the rest of the league is likely to take, and why</span></h3>
+  <div style="overflow-x:auto"><table class="rw"><thead><tr>
+    <th>Team</th><th>Next pick</th><th class="hidesm">Roster so far</th><th>Likely targets</th>
+  </tr></thead><tbody id="roomBody"></tbody></table></div>
+</div>
+
+<p class="footer" id="footer"></p>
+</div>
+
+<dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
+
+<script>
+"use strict";
+/* ============================================================
+   DRAFT ROOM — 2026 season
+   Board: PFN Katz/Soppe PPR consensus (per-game projections),
+   pulled 27 Aug 2026. Byes: 2026 NFL schedule.
+   Everything below recomputes from projections, so changing
+   league scoring re-ranks the board rather than just relabeling it.
+   ============================================================ */
+
+const BYE = {ARI:14,ATL:11,BAL:13,BUF:7,CAR:5,CHI:10,CIN:6,CLE:11,DAL:14,DEN:10,DET:6,GB:11,
+HOU:8,IND:13,JAX:7,KC:5,LV:13,LAC:7,LAR:11,MIA:6,MIN:6,NE:11,NO:8,NYG:8,NYJ:13,PHI:10,
+PIT:9,SF:8,SEA:11,TB:10,TEN:9,WAS:7};
+
+/* name|POS|TEAM|ppg|espnADP|consensusADP|rec|recYd|recTD|rushYd|rushTD|fum|passYd|passTD|int|gamesProjected|injuryNote
+   Stat lines (RB/WR) let scoring be computed exactly instead of estimated.
+   ADP from 9 platforms incl. ESPN, 26 Aug 2026. */
+const POOL_RAW = `Jahmyr Gibbs|RB|DET|23.1|1.4|1.3|68|555|3|1298|13|1|||||
+Bijan Robinson|RB|ATL|20.6|2.4|2.0|72|669|3|1332|8|1|||||
+Ja'Marr Chase|WR|CIN|23.5|4.2|3.5|119|1470|10|16|0|0|||||
+Puka Nacua|WR|LAR|20.9|5.3|4.8|117|1531|8|87|0|0|||||
+Jaxon Smith-Njigba|WR|SEA|19.6|6.1|6.3|108|1506|9|31|0|0|||||
+Amon-Ra St. Brown|WR|DET|18.4|8.3|7.8|113|1340|9|13|0|0|||||
+Jonathan Taylor|RB|IND|19.4|6.6|7.3|41|329|1|1438|12|1|||||
+James Cook III|RB|BUF|19.1|10.8|10.3|34|291|1|1351|10|1|||||
+Christian McCaffrey|RB|SF|18.4|7.6|6.6|75|666|4|1034|8|1|||||
+Saquon Barkley|RB|PHI|17.1|14.4|14.6|38|302|2|1258|8|1|||||
+Justin Jefferson|WR|MIN|17.2|12.6|12.9|98|1306|7|8|0|0|||||
+Chase Brown|RB|CIN|17.1|18.3|14.4|61|424|3|984|7|1|||||
+CeeDee Lamb|WR|DAL|17.2|11.5|11.7|97|1307|7|17|0|0|||||
+De'Von Achane|RB|MIA|16.1|12.1|14.8|61|455|3|1133|5|1|||||
+Drake London|WR|ATL|16.4|19.7|20.6|94|1234|8|0|0|0|||||
+Derrick Henry|RB|BAL|15.9|17.2|18.9|17|165|0|1444|12|1|||||
+Nico Collins|WR|HOU|16.4|26.1|24.3|83|1231|7|10|0|0|||||
+A.J. Brown|WR|NE|15.6|22.6|20.5|86|1196|7|1|0|0|||||
+Brock Bowers|TE|LV|16.7|24.1|20.7|114|1150|7.4|0|0|0|||||
+Kenneth Walker III|RB|KC|15.8|24.3|17.7|45|359|1|1120|8|0|||||
+Malik Nabers|WR|NYG|15.5|34.5|27.9|82|1062|7|10|0|0|||||
+George Pickens|WR|DAL|15.5|29.0|25.1|81|1203|7|1|0|0|||||
+Ashton Jeanty|RB|LV|15.3|21.1|16.9|52|374|2|1031|7|1|||||
+Rashee Rice|WR|KC|15.0|27.2|29.1|91|1013|8|33|0|0|||||
+Omarion Hampton|RB|LAC|15.3|20.7|17.2|48|332|1|1012|8|1|||||
+Zay Flowers|WR|BAL|15.0|43.5|36.5|81|1144|5|56|0|0|||||
+Trey McBride|TE|ARI|13.8|22.1|24.8|112|1080|5.8|0|0|0|||||
+Jeremiyah Love|RB|ARI|15.0|25.4|30.2|54|417|2|987|6|1|||||
+Chris Olave|WR|NO|14.3|30.0|28.1|89|1145|7|1|0|0|||||
+Jaylen Waddle|WR|DEN|14.3|53.2|43.3|78|1022|6|17|0|0|||||
+Ladd McConkey|WR|LAC|14.3|47.2|41.8|77|1009|6|3|0|0|||||
+Colston Loveland|TE|CHI|13.5|43.2|40.5|86|1063|7.7|0|0|0|||||
+DeVonta Smith|WR|PHI|14.3|38.0|32.5|86|1108|6|1|0|0|||||
+Javonte Williams|RB|DAL|14.5|33.8|33.6|33|185|1|1122|9|1|||||
+Tee Higgins|WR|CIN|14.2|51.8|39.2|72|983|9|1|0|0|||||
+Emeka Egbuka|WR|TB|14.2|45.8|41.1|70|1033|7|7|0|0|||||
+Josh Jacobs|RB|GB|14.5|49.4|44.1|34|273|1|1030|11|1|||||
+Breece Hall|RB|NYJ|13.9|35.5|34.5|45|392|2|1046|5|1|||||
+Terry McLaurin|WR|WAS|14.2|60.7|53.8|70|975|7|1|0|0|||||
+Josh Allen|QB|BUF|23.6|19.9|27.8||||480.0|9.7|0|3913.0|26.9|11.8||
+Tetairoa McMillan|WR|CAR|14.2|41.7|40.6|76|1084|6|1|0|0|||||
+Garrett Wilson|WR|NYJ|14.2|37.1|41.4|89|1029|5|5|0|0|||||
+Kyren Williams|RB|LAR|13.9|37.5|30.8|31|225|2|1073|9|1|||||
+Luther Burden III|WR|CHI|14.2|76.2|54.4|74|974|5|47|0|0|||||
+Parker Washington|WR|JAX|13.2|91.4|66.9|67|890|5|20|0|0|||||
+Drake Maye|QB|NE|22.1|47.3|58.5||||431.0|3.3|0|4204.0|27.6|12.6||
+D'Andre Swift|RB|CHI|13.9|55.9|47.6|32|273|0|985|7|0|||||
+Travis Etienne Jr.|RB|NO|13.1|42.6|41.3|40|316|2|1012|6|0|||||
+Christian Watson|WR|GB|13.2|91.4|64.5|58|950|7|13|0|0|||||
+Jameson Williams|WR|DET|13.2|64.9|57.0|62|1009|6|37|0|0|||||
+Cam Skattebo|RB|NYG|12.8|45.3|44.3|41|323|1|920|7|1|||||
+Lamar Jackson|QB|BAL|21.5|35.8|48.5||||700.0|4.2|0|3714.0|27.5|9.7||
+David Montgomery|RB|HOU|12.8|64.5|52.0|30|222|0|915|7|1|||||
+Rome Odunze|WR|CHI|13.2|64.5|61.7|60|905|7|2|0|0|||||
+Tucker Kraft|TE|GB|12.8|90.5|73.5|71|884|8.3|0|0|0|||||
+Jayden Daniels|QB|WAS|20.7|52.2|70.2||||593.0|4.8|0|3868.0|24.6|10.4||
+Carnell Tate|WR|TEN|12.1|77.1|72.4|65|880|4|2|0|0|||||
+Tyler Warren|TE|IND|11.7|51.8|52.5|82|899|7.4|0|0|0|||||
+Bhayshul Tuten|RB|JAX|12.8|65.0|58.5|30|228|1|898|7|1|||||
+Marvin Harrison Jr.|WR|ARI|12.1|80.5|72.6|61|876|5|0|0|0|||||
+DJ Moore|WR|BUF|12.1|62.3|54.7|68|883|6|39|0|0|||||
+Joe Burrow|QB|CIN|19.2|55.0|60.2||||136.0|1.5|0|4502.0|37.9|13.3||
+Davante Adams|WR|LAR|12.1|46.2|52.0|66|874|9|0|0|0|||||
+Sam LaPorta|TE|DET|11.3|72.4|76.9|78|848|7.0|0|0|0|||||
+Quinshon Judkins|RB|CLE|12.4|51.0|52.5|29|207|0|1034|7|0|||||
+Brian Thomas Jr.|WR|JAX|12.1|111.2|79.8|57|856|5|19|0|0|||||
+Jalen Hurts|QB|PHI|18.7|53.3|72.5||||461.0|9.4|0|3681.0|24.5|11.4||
+Jadarian Price|RB|SEA|12.4|70.9|62.9|24|201|0|895|7|1|||||
+DK Metcalf|WR|PIT|12.1|85.7|80.4|62|893|6|6|0|0|||||
+Jaylen Warren|RB|PIT|11.9|91.2|74.7|43|334|1|788|4|0|||||
+Bucky Irving|RB|TB|11.9|56.3|52.3|38|315|2|943|5|1|||||
+Stefon Diggs|WR|WAS|11.7|108.9|103.1|68|768|4|1|0|0|||||
+George Kittle|TE|SF|11.3|79.9|93.3|75|841|7.2|0|0|0|||||
+Quentin Johnston|WR|LAC|11.7|131.2|98.5|53|751|6|9|0|0|||||
+Rhamondre Stevenson|RB|NE|11.9|81.0|73.4|36|299|1|733|6|1|||||
+Mike Evans|WR|SF|11.7|87.7|64.8|65|923|7|0|0|0|||||
+TreVeyon Henderson|RB|NE|11.6|79.3|63.5|35|252|1|823|6|0|||||
+Caleb Williams|QB|CHI|18.3|92.5|79.6||||355.0|2.3|0|4300.0|30.2|10.9||
+Michael Pittman Jr.|WR|PIT|11.7|90.3|99.5|77|771|5|0|0|0|||||
+Justin Herbert|QB|LAC|18.3|92.0|86.8||||311.0|3.5|0|3997.0|26.2|11.0||
+Josh Downs|WR|IND|11.7|137.2|104.2|71|758|4|7|0|0|||||
+Harold Fannin Jr.|TE|CLE|10.5|71.9|79.2|70|736|5.7|0|0|0|||||
+Jaxson Dart|QB|NYG|18.1|81.3|103.7||||469.0|7.6|0|3791.0|24.1|13.0||
+Chuba Hubbard|RB|CAR|10.5|110.9|96.1|31|213|1|715|4|0|||||
+Jakobi Meyers|WR|JAX|11.7|121.2|119.6|66|755|4|18|0|0|||||
+Tony Pollard|RB|TEN|10.5|94.4|81.7|29|192|0|938|5|1|||||
+Jayden Reed|WR|GB|11.7|136.0|108.8|60|750|5|78|0|0|||||
+Michael Wilson|WR|ARI|10.4|102.2|93.0|65|819|4|0|0|0|||||
+Trevor Lawrence|QB|JAX|17.7|96.6|92.1||||294.0|5.5|0|3931.0|24.7|12.9||
+Kenny Gainwell|RB|TB|10.5|106.1|101.7|47|338|1|495|3|0|||||
+Wan'Dale Robinson|WR|TEN|10.3|115.5|109.7|76|776|3|15|0|0|||||
+Courtland Sutton|WR|DEN|10.2|80.8|82.7|63|838|6|0|0|0|||||
+Chris Godwin Jr.|WR|TB|10.2|128.3|92.0|69|794|5|1|0|0|||||
+Kyle Pitts Sr.|TE|ATL|10.5|67.3|77.7|75|885|5.1|0|0|0|||||
+Makai Lemon|WR|PHI|10.2|134.8|108.5|56|739|4|8|0|0|||||
+Jonathon Brooks|RB|CAR|10.5|108.5|84.8|31|229|1|787|4|1|||||
+Khalil Shakir|WR|BUF|10.2|137.8|136.6|66|701|3|8|0|0|||||
+Jacory Croskey-Merritt|RB|WAS|10.5|135.5|109.5|15|114|0|810|6|1|||||
+Dak Prescott|QB|DAL|17.7|75.4|81.2||||137.0|1.6|0|4645.0|33.2|13.1||
+Bo Nix|QB|DEN|16.1|97.3|113.1||||299.0|3.7|0|3983.0|27.9|13.8||
+Jordan Mason|RB|MIN|10.5|139.4|106.0|15|86|0|840|6|0|||||
+Isaiah Likely|TE|NYG|10.5|124.0|111.9|68|694|4.5|0|0|0|||||
+Jordan Addison|WR|MIN|9.9|119.1|108.6|56|765|5|27|0|0|||||
+Blake Corum|RB|LAR|10.5|128.9|98.3|13|86|0|783|6|0|||||
+Rashid Shaheed|WR|SEA|9.8|159.1|142.1|45|657|3|73|0|0|||||
+Rico Dowdle|RB|PIT|9.9|97.4|86.0|32|233|1|841|5|0|||||
+De'Zhaun Stribling|WR|SF|9.8|143.3|114.7|51|692|4|11|0|0|||||
+Romeo Doubs|WR|NE|9.8|148.8|128.5|55|723|5|0|0|0|||||
+Brock Purdy|QB|SF|16.1|107.9|109.1||||250.0|3.5|0|4529.0|30.7|14.0||
+Juwan Johnson|TE|NO|10.5|159.6|145.0|70|724|4.3|0|0|0|||||
+Patrick Mahomes II|QB|KC|15.8|107.4|109.7||||190.0|1.5|0|4469.0|30.4|12.6||
+Kyle Monangai|RB|CHI|9.9|124.9|109.0|21|170|0|744|5|0||||15|knee - Week 1 in doubt
+Alec Pierce|WR|IND|9.8|107.3|97.4|52|897|5|0|0|0|||||
+Xavier Worthy|WR|KC|9.8|128.3|127.8|53|690|4|85|0|0|||||
+KC Concepcion|WR|CLE|9.8|146.3|120.3|59|746|3|34|0|0|||||
+RJ Harvey|RB|DEN|9.3|128.9|91.6|43|321|3|434|4|0|||||
+Jordyn Tyson|WR|NO|9.8|167.9|118.9|43|569|3|2|0|0|||||
+Travis Kelce|TE|KC|10.5|95.2|104.2|82|858|5.7|0|0|0|||||
+Matthew Golden|WR|GB|8.4|109.8|117.2|55|735|4|39|0|0|||||
+Jake Ferguson|TE|DAL|10.5|109.1|115.3|74|622|5.3|0|0|0|||||
+Matthew Stafford|QB|LAR|15.8|89.0|104.1||||41.0|0.6|0|4399.0|34.5|11.2||
+J.K. Dobbins|RB|DEN|8.7|113.4|97.0|18|97|0|917|6|0|||||
+Deebo Samuel Sr.|WR|SF|8.4|139.3|133.4|50|602|3|90|0|0|||||
+Rachaad White|RB|WAS|8.7|127.6|116.1|35|241|1|521|4|0|||||
+Jalen Coker|WR|CAR|8.4|156.5|137.3|58|712|4|0|0|0|||||
+Travis Hunter|WR|JAX|8.4|119.5|186.9|36|433|2|6|0|0|||||
+Kyler Murray|QB|MIN|15.5|140.8|132.5||||498.0|3.5|0|3706.0|23.3|11.5||
+Chris Rodriguez Jr.|RB|JAX|8.7|165.0|135.0|6|52|0|611|5|0|||||
+Dallas Goedert|TE|PHI|9.6|103.1|112.7|63|631|6.3|0|0|0|||||
+Jalen McMillan|WR|TB|8.4|165.6|168.1|42|564|3|18|0|0|||||
+Mark Andrews|TE|BAL|9.6|124.9|126.8|65|689|6.6|0|0|0|||||
+Aaron Jones Sr.|RB|MIN|8.7|119.0|122.9|37|273|1|590|2|0|||||
+Jerry Jeudy|WR|CLE|8.4|167.9|193.7|46|624|2|2|0|0|||||
+Zach Charbonnet|RB|SEA|8.7|153.6|146.5|17|126|0|465|4|0||||13|reserve/PUP - misses 4 games
+Jared Goff|QB|DET|15.5|135.9|120.5||||56.0|0.7|0|4635.0|32.7|11.3||
+Woody Marks|RB|HOU|7.5|151.0|139.4|24|194|1|557|3|0|||||
+Tre Tucker|WR|LV|8.4|169.0|164.9|46|608|3|47|0|0|||||
+Dalton Kincaid|TE|BUF|8.3|130.8|111.7|61|672|4.6|0|0|0|||||
+Ryan Flournoy|WR|DAL|7.9|171.1|191.9|40|471|3|9|0|0|||||
+Hunter Henry|TE|NE|8.3|150.2|155.5|59|657|5.0|0|0|0|||||
+Jordan Love|QB|GB|15.5|155.8|138.6||||194.0|1.8|0|4189.0|29.9|13.0||
+Tyler Allgeier|RB|ARI|7.5|162.9|138.9|15|104|0|463|3|0|||||
+Jauan Jennings|WR|MIN|7.9|171.1|182.3|45|526|3|0|0|0|||||
+Isiah Pacheco|RB|DET|7.5|158.7|166.6|15|103|0|517|3|0|||||
+Jalen Nailor|WR|LV|7.9|171.1|166.5|43|573|3|6|0|0|||||
+Chig Okonkwo|TE|WAS|8.3|170.1|156.5|69|670|3.6|0|0|0|||||
+Tre' Harris|WR|LAC|7.8|171.2|185.2|36|449|2|1|0|0|||||
+Tyler Shough|QB|NO|14.6|153.3|145.5||||291.0|3.0|0|4071.0|25.0|13.4||
+Keenan Allen|WR|IND|7.8|165.8|166.8|56|581|3|0|0|0|||||
+Denzel Boston|WR|CLE|7.8|168.4|152.5|52|665|3|2|0|0|||||
+Mike Washington Jr.|RB|LV|6.8|163.5|143.1|16|121|0|446|2|0|||||
+Malik Willis|QB|MIA|14.6|167.4|152.6||||617.0|5.8|0|3277.0|17.8|11.3||
+Adonai Mitchell|WR|NYJ|7.8|170.9|189.9|42|567|3|5|0|0|||||
+Brenton Strange|TE|JAX|8.3|167.6|148.7|58|622|3.4|0|0|0|||||
+Tank Dell|WR|HOU|7.8|161.3|194.3|35|448|2|21|0|0|||||
+Tyjae Spears|RB|TEN|6.8|148.6|147.8|41|281|1|417|3|0|||||
+Dalton Schultz|TE|HOU|8.3|168.6|163.6|68|697|4.4|0|0|0|||||
+Tank Bigsby|RB|PHI|6.8|169.7|157.5|5|39|0|432|3|0|||||
+Omar Cooper Jr.|WR|NYJ|7.8|171.2|194.3|36|437|2|10|0|0|||||
+Jaylin Noel|WR|HOU|7.4|||38|437|2|17|0|0|||||
+Keaton Mitchell|RB|LAC|6.8|169.3|145.4|20|155|0|415|2|0|||||
+Pat Bryant|WR|DEN|7.4|170.4|204.0|38|462|2|0|0|0|||||
+Dontayvion Wicks|WR|PHI|7.4|171.0|181.6|36|454|2|1|0|0|||||
+Greg Dulcich|TE|MIA|8.0|170.5|188.4|44|506|2.6|0|0|0|||||
+Baker Mayfield|QB|TB|14.0|145.9|135.6||||240.0|2.0|0|3950.0|28.1|14.5||
+Brian Robinson Jr.|RB|ATL|6.8|167.1|166.0|9|61|0|497|4|0|||||
+Kayshon Boutte|WR|HOU|7.4|170.7|187.3|34|498|4|0|0|0|||||
+Troy Franklin|WR|DEN|7.4|||27|314|2|7|0|0|||||
+Dylan Sampson|RB|CLE|6.8|169.3|163.9|33|262|1|282|1|0|||||
+Christian Kirk|WR|SF|7.1|||22|273|1|1|0|0|||||
+Daniel Jones|QB|IND|13.8|159.0|170.3||||225.0|2.1|0|4038.0|24.3|12.4||
+Nick Singleton|RB|TEN|6.5|170.4|217.5|7|59|0|172|1|0|||||
+Kenyon Sadiq|TE|NYJ|8.0|159.2|168.6|||||||||||
+Malachi Fields|WR|NYG|7.1|170.1|210.2|31|388|2|0|0|0|||||
+Jonah Coleman|RB|DEN|6.5|169.4|150.0|13|102|0|292|2|0|||||
+Rashod Bateman|WR|BAL|7.1|||33|484|4|0|0|0|||||
+Kimani Vidal|RB|LAC|6.5|171.0|204.5|11|89|0|223|1|0|||||
+Isaac TeSlaa|WR|DET|7.1|170.3|209.3|28|396|3|0|0|0|||||
+Calvin Ridley|WR|TEN|7.1|||38|590|2|12|0|0|||||
+C.J. Stroud|QB|HOU|13.8|165.2|180.6||||176.0|1.7|0|4180.0|26.5|12.5||
+Chimere Dike|WR|TEN|7.1|||21|220|2|25|0|0|||||
+MarShawn Lloyd|RB|GB|6.5|146.2|133.8|13|98|0|370|2|0|||||
+AJ Barner|TE|SEA|8.0|169.7|179.1|64|585|5.1|0|0|0|||||
+Darnell Mooney|WR|NYG|6.6|||21|299|1|4|0|0|||||
+Cooper Kupp|WR|SEA|6.6|169.2|208.2|39|483|2|1|0|0|||||
+Sean Tucker|RB|TB|6.0|||5|44|0|235|2|0|||||
+Sam Darnold|QB|SEA|13.8|162.1|170.2||||170.0|1.7|0|4190.0|29.3|15.4||
+Terrance Ferguson|TE|LAR|8.0|167.8|161.6|||||||||||
+Houston Texans|DST|HOU|9.9|90.9|112.9|||||||||||
+Devin Singletary|RB|NYG|6.0|||4|34|0|133|0|0|||||
+Elic Ayomanor|WR|TEN|6.6|||21|292|2|0|0|0|||||
+Denver Broncos|DST|DEN|9.2|99.0|126.1|||||||||||
+Ray Davis|RB|BUF|6.0|171.0|190.5|10|91|0|273|1|0|||||
+Oronde Gadsden II|TE|LAC|7.7|170.2|165.7|||||||||||
+Los Angeles Rams|DST|LAR|8.3|106.6|120.1|||||||||||
+Najee Harris|RB|NYG|5.2|170.2|219.8|9|65|0|277|2|0|||||
+Zachariah Branch|WR|ATL|6.6|||32|389|1|21|0|0|||||
+Bryce Young|QB|CAR|13.8|168.9|202.9||||363.0|3.6|0|3399.0|21.3|12.1||
+Seattle Seahawks|DST|SEA|8.2|111.5|130.8|||||||||||
+T.J. Hockenson|TE|MIN|7.7|145.6|164.8|63|600|3.4|0|0|0|||||
+Tyquan Thornton|WR|KC|6.1|||23|408|2|0|0|0|||||
+Philadelphia Eagles|DST|PHI|8.0|137.3|150.1|||||||||||
+Keon Coleman|WR|BUF|6.1|||23|313|2|1|0|0|||||
+Kaytron Allen|RB|WAS|5.2|170.5|219.7|5|43|0|191|1|0|||||
+Malik Washington|WR|MIA|6.1|170.2|176.8|46|433|2|63|0|0|||||
+Cam Ward|QB|TEN|13.8|169.2|194.2||||163.0|2.2|0|3861.0|22.8|12.3||
+New England Patriots|DST|NE|7.6|152.7|161.1|||||||||||
+Braelon Allen|RB|NYJ|5.2|171.0|173.3|11|90|0|374|3|0|||||
+Devaughn Vele|WR|NO|6.1|||41|493|3|0|0|0|||||
+Minnesota Vikings|DST|MIN|7.5|168.9|165.1|||||||||||
+Jack Bech|WR|LV|6.1|||31|362|1|0|0|0|||||
+Jaylen Wright|RB|MIA|5.2|||7|58|0|282|1|0|||||
+Pittsburgh Steelers|DST|PIT|7.3|120.6|160.1|||||||||||
+Pat Freiermuth|TE|PIT|7.7|169.5|204.4|50|495|3.9|0|0|0|||||
+Kyle Williams|WR|NE|6.1|||||||||||||
+Baltimore Ravens|DST|BAL|7.2|133.6|164.9|||||||||||
+Darius Slayton|WR|NYG|6.1|||27|389|1|4|0|0|||||
+Jacksonville Jaguars|DST|JAX|7.1|168.1|172.5|||||||||||
+Jacoby Brissett|QB|ARI|13.5|||||||||||||
+James Conner|RB|ARI|5.2|170.2|212.3|13|101|0|193|1|0|||||
+Elijah Sarratt|WR|BAL|6.1|||||||||||||
+Los Angeles Chargers|DST|LAC|6.9|165.6|175.9|||||||||||
+Tory Horton|WR|SEA|6.1|||23|314|3|2|0|0|||||
+Aaron Rodgers|QB|PIT|13.5|169.2|193.2|||||||||||
+Green Bay Packers|DST|GB|6.8|169.1|194.7|||||||||||
+Jordan James|RB|SF|5.2|171.0|214.3|9|74|0|237|1|0|||||
+Marvin Mims Jr.|WR|DEN|6.1|||22|236|1|45|0|0|||||
+Evan Engram|TE|DEN|7.2|||32|280|1.2|0|0|0|||||
+Kansas City Chiefs|DST|KC|6.7|165.6|199.3|||||||||||
+Ollie Gordon II|RB|MIA|5.2|||5|35|0|181|1|0|||||
+Treylon Burks|WR|WAS|6.1|||||||||||||
+Detroit Lions|DST|DET|6.6|154.2|185.5|||||||||||
+Kendre Miller|RB|NO|5.2|||4|29|0|136|0|0|||||
+Buffalo Bills|DST|BUF|6.4|168.9|199.1|||||||||||
+Mack Hollins|WR|NE|6.1|||||||||||||
+Cleveland Browns|DST|CLE|6.1|157.3|205.6|||||||||||
+Tyrone Tracy Jr.|RB|NYG|5.2|170.3|152.1|20|151|0|413|1|0|||||
+Gunnar Helm|TE|TEN|7.2|170.7|211.6|56|522|4.4|0|0|0|||||
+Ja'Kobi Lane|WR|BAL|6.1|168.5|168.6|36|511|4|3|0|0|||||
+Atlanta Falcons|DST|ATL|6.1|170.1|206.0|||||||||||
+Devin Neal|RB|NO|5.2|||5|40|0|93|0|0|||||
+Geno Smith|QB|NYJ|12.4||||||179.0|1.2|0|3670.0|20.7|13.6||
+Cedric Tillman|WR|CLE|6.1|||||||||||||
+New Orleans Saints|DST|NO|6.0|170.5|221.3|||||||||||
+Cade Otton|TE|TB|7.2|170.4|212.0|54|532|3.1|0|0|0|||||
+Xavier Legette|WR|CAR|6.1|||32|345|2|5|0|0|||||
+Indianapolis Colts|DST|IND|5.9|||||||||||||
+San Francisco 49ers|DST|SF|5.8|168.9|210.7|||||||||||
+Andrei Iosivas|WR|CIN|6.1|||29|361|2|8|0|0|||||
+Alvin Kamara|RB|NO|5.2|160.2|166.9|27|190|0|372|2|0|||||
+Miami Dolphins|DST|MIA|5.6|||||||||||||
+Caleb Douglas|WR|MIA|6.1|170.5|202.4|38|509|2|2|0|0|||||
+Tua Tagovailoa|QB|ATL|12.4|||||||||||||
+Brandon Aubrey|K|DAL|11.2|||||||||||||
+Washington Commanders|DST|WAS|5.6|||||||||||||
+Jake Tonges|TE|SF|7.0|||||||||||||
+Cam Little|K|JAX|10.6|||||||||||||
+George Holani|RB|SEA|4.7|170.3|212.2|9|69|0|210|1|0|||||
+Isaiah Bond|WR|CLE|5.0|||||||||||||
+Dallas Cowboys|DST|DAL|5.4|166.9|202.5|||||||||||
+Cameron Dicker|K|LAC|10.1|||||||||||||
+Ka'imi Fairbairn|K|HOU|9.6|||||||||||||
+Evan McPherson|K|CIN|9.4|||||||||||||
+Jason Myers|K|SEA|9.3|||||||||||||
+Harrison Mevis|K|LAR|9.2|||||||||||||
+Andy Borregales|K|NE|9.0|||||||||||||
+Tyler Loop|K|BAL|8.8|||||||||||||
+Eddy Pineiro|K|SF|8.8|||||||||||||
+Jake Bates|K|DET|8.6|||||||||||||
+Cairo Santos|K|CHI|8.4|||||||||||||
+Chase McLaughlin|K|TB|8.4|||||||||||||
+Wil Lutz|K|DEN|8.2|||||||||||||
+Harrison Butker|K|KC|8.0|||||||||||||
+Chris Boswell|K|PIT|8.0|||||||||||||
+Jordyn Brooks|DP|MIA|12.0|||||||||||||
+Jack Campbell|DP|DET|11.4|||||||||||||
+Roquan Smith|DP|BAL|11.0|||||||||||||
+Carson Schwesinger|DP|CLE|10.8|||||||||||||
+Foyesade Oluokun|DP|JAX|10.4|||||||||||||
+Blake Cashman|DP|MIN|10.3|||||||||||||
+Myles Garrett|DP|LAR|8.6|||||||||||||`;
+
+const POSITIONS = ["QB","RB","WR","TE","K","DST","DP"];
+const FLEX_OK = ["RB","WR","TE"];
+const SUPER_OK = ["QB","RB","WR","TE"];
+const GAMES = 17;
+
+function parsePool(raw){
+  const num = v => (v===undefined || v==="" ) ? null : (parseFloat(v));
+  return raw.trim().split("\n").map((line,i)=>{
+    const c = line.split("|");
+    const team = (c[2]||"").trim();
+    return {id:i, name:c[0].trim(), pos:c[1].trim(), team,
+            ppg:parseFloat(c[3])||0, bye:BYE[team]||0, ecr:i+1,
+            espn:num(c[4]), cons:num(c[5]),
+            rec:num(c[6]), recYd:num(c[7]), recTD:num(c[8]),
+            rushYd:num(c[9]), rushTD:num(c[10]), fum:num(c[11]),
+            passYd:num(c[12]), passTD:num(c[13]), intc:num(c[14]),
+            gp:num(c[15]), note:(c[16]||"").trim()};
+  });
+}
+/* Where the room is likely to take a player: real ADP first, board rank last. */
+function marketRank(p){
+  if(p.espn!=null && p.espn<170) return p.espn;
+  if(p.cons!=null) return p.cons;
+  return p.ecr + 60;
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const STORE_KEY = "draftroom.v1";
+
+function blankLeague(name){
+  return {
+    name, teams:12, rounds:16, type:"snake", budget:200,
+    scoring:{ppr:1, tePremium:0, passTD:4, passYdPerPt:25},
+    roster:{QB:1,RB:2,WR:2,TE:1,FLEX:1,SFLEX:0,K:1,DST:1,BN:6},
+    mySlots:[], ownPicks:null, managers:{}, overrides:{}, picks:[],
+    tau:5, customPool:null
+  };
+}
+
+/* Saved league setups. Applied on a fresh install, and reloadable
+   from Settings if a profile gets edited by mistake. */
+const PRESETS = [
+  {
+    name:"The Bubble Bowl", teams:14, rounds:13, type:"snake", budget:200,
+    scoring:{ppr:0.5, tePremium:0, passTD:4, passYdPerPt:25},
+    roster:{QB:1,RB:1,WR:2,TE:1,FLEX:2,SFLEX:0,K:1,DST:1,BN:4},
+    tau:5,
+    managers:{1:"Bennett",2:"Ben",3:"ImInTooManyLeagues",4:"Colin",5:"$140 + tip",
+              6:"Team 6",7:"Team 7",8:"Team 8",9:"Golden Lambeau",10:"Beef Burrowito Bowls",
+              11:"Team 11",12:"Maria",13:"Adam",14:"Team 14"}
+  },
+  {
+    name:"League RamRod", teams:12, rounds:15, type:"snake", budget:200,
+    scoring:{ppr:1, tePremium:0, passTD:6, passYdPerPt:25},
+    roster:{QB:1,RB:2,WR:2,TE:1,FLEX:1,SFLEX:0,K:1,DST:1,BN:6},
+    tau:5,
+    managers:{1:"Skatterpoo",2:"Packen Buffalo",3:"Shawn Spencer",4:"Burton Guster",
+              5:"Mama Bear",6:"Ridley me this",7:"Golden Lambeau",8:"Blahnik",
+              9:"Creek €hub",10:"Kadarius Toney Worshipper",11:"Korbin",12:"Crazyforkoo"}
+  },
+  {
+    name:"Pay me", teams:10, rounds:16, type:"snake", budget:200,
+    scoring:{ppr:1, tePremium:0, passTD:4, passYdPerPt:25},
+    roster:{QB:2,RB:2,WR:2,TE:1,FLEX:1,SFLEX:0,DP:1,K:1,DST:1,BN:5},
+    tau:5,
+    managers:{1:"Diddy",2:"The stribclub",3:"Caders Crafty Crew",4:"Hacks",
+              5:"Kaiden",6:"Golden Lambeau",7:"MakAttack",8:"Braylon",
+              9:"The Black Delegation",10:"Total degen"}
+  }
+];
+function applyPreset(i){
+  const p = PRESETS[i]; if(!p) return null;
+  const l = blankLeague(p.name);
+  Object.keys(p).forEach(k=>{
+    l[k] = (typeof p[k]==="object" && p[k]!==null) ? JSON.parse(JSON.stringify(p[k])) : p[k];
+  });
+  return l;
+}
+
+let S = load();
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){
+      const p = JSON.parse(raw);
+      if(p && p.leagues && p.leagues.length===3) return p;
+    }
+  }catch(e){ console.warn("Could not read saved draft, starting clean.", e); }
+  return {active:0, leagues:[
+    applyPreset(0) || blankLeague("League 1"),
+    applyPreset(1) || blankLeague("League 2"),
+    applyPreset(2) || blankLeague("League 3")
+  ]};
+}
+let saveTimer=null;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }
+    catch(e){ console.warn("Save failed", e); }
+  },120);
+}
+const L = ()=>S.leagues[S.active];
+let POOL = parsePool(POOL_RAW);
+function pool(){ const l=L(); return l.customPool ? l.customPool : POOL; }
+
+/* ============================================================
+   SCORING → per-game value in THIS league
+   ============================================================ */
+function estRec(p){
+  if(p.pos==="WR") return p.ppg/3.1;
+  if(p.pos==="TE") return p.ppg/3.0;
+  if(p.pos==="RB") return p.ppg/6.5;
+  return 0;
+}
+/* The stat lines and the fallback projections come from different sources,
+   and one runs consistently richer than the other. Without this the positions
+   that lack stat lines would look better than they are — the app drafted four
+   tight ends in testing. Measured from the players who appear in both. */
+let CAL = 1;
+function calibrate(list){
+  const rs=[];
+  list.forEach(p=>{
+    if(p.rec!=null && p.ppg>0){
+      const exact = (p.rushYd*0.1 + p.rushTD*6 + p.recYd*0.1 + p.recTD*6
+                   + p.rec - (p.fum||0)*2) / GAMES;
+      rs.push(exact/p.ppg);
+    }
+  });
+  rs.sort((a,b)=>a-b);
+  CAL = rs.length ? rs[Math.floor(rs.length/2)] : 1;
+  return CAL;
+}
+calibrate(POOL);
+
+function adjustedPPG(p, sc){
+  // Quarterbacks: passing yards, touchdowns and picks straight from the
+  // projection, so a 6-point passing TD league is computed, not approximated.
+  if(p.passYd!=null){
+    const pts = p.passYd/sc.passYdPerPt + p.passTD*sc.passTD - (p.intc||0)*2
+              + (p.rushYd||0)*0.1 + (p.rushTD||0)*6;
+    return Math.max(0, pts/GAMES);
+  }
+  // Exact where we have a stat line: compute this league's points from the
+  // actual projected receptions, yards and touchdowns.
+  if(p.rec!=null){
+    let pts = p.rushYd*0.1 + p.rushTD*6 + p.recYd*0.1 + p.recTD*6
+            + p.rec*sc.ppr - (p.fum||0)*2;
+    if(p.pos==="TE") pts += p.rec*sc.tePremium;
+    return Math.max(0, pts/GAMES);
+  }
+  // Otherwise fall back to converting the full-PPR projection, on the same scale.
+  let v = p.ppg * CAL;
+  if(p.pos==="QB"){
+    const ptd = Math.max(0.6, v/12);
+    v += (sc.passTD - 4) * ptd;
+    const pyds = Math.max(150, 220 + (v-14)*8);
+    v += pyds*(1/sc.passYdPerPt) - pyds*(1/25);
+  } else {
+    const rec = estRec(p);
+    v += (sc.ppr - 1) * rec;
+    if(p.pos==="TE") v += sc.tePremium * rec;
+  }
+  return Math.max(0, v);
+}
+
+/* replacement level = last starter-quality player at each position */
+function replacementLevels(l){
+  const r=l.roster, T=l.teams;
+  const flexShare={RB:0.45,WR:0.45,TE:0.10};
+  const superShare={QB:0.75,RB:0.08,WR:0.12,TE:0.05};
+  const demand={};
+  POSITIONS.forEach(pos=>{
+    let d = (r[pos]||0)*T;
+    if(FLEX_OK.includes(pos)) d += (r.FLEX||0)*T*flexShare[pos];
+    if(SUPER_OK.includes(pos)) d += (r.SFLEX||0)*T*(superShare[pos]||0);
+    demand[pos]=d;
+  });
+  const out={};
+  POSITIONS.forEach(pos=>{
+    const list = pool().filter(p=>p.pos===pos)
+      .map(p=>adjustedPPG(p,l.scoring)).sort((a,b)=>b-a);
+    if(!list.length){ out[pos]=0; return; }
+    const idx = Math.min(list.length-1, Math.max(0, Math.round(demand[pos])));
+    out[pos] = list[idx];
+  });
+  return out;
+}
+
+/* ============================================================
+   DRAFT ORDER
+   ============================================================ */
+const totalPicks = l => l.teams * l.rounds;
+function slotOfPick(l, overall){            // 1-indexed overall pick → slot number
+  if(l.overrides[overall]) return l.overrides[overall];
+  const r = Math.ceil(overall/l.teams);
+  const i = overall - (r-1)*l.teams;
+  if(l.type==="linear") return i;
+  return (r%2===1) ? i : (l.teams - i + 1);
+}
+const currentPick = l => l.picks.length + 1;
+// ownPicks, when set, is the explicit list of overall picks you hold —
+// that's how a traded second first-rounder gets represented.
+const isMine = (l,overall) => Array.isArray(l.ownPicks)
+  ? l.ownPicks.includes(overall)
+  : l.mySlots.includes(slotOfPick(l,overall));
+function nextMyPick(l, from){
+  for(let o=from; o<=totalPicks(l); o++) if(isMine(l,o)) return o;
+  return null;
+}
+function teamName(l, slot){ return (l.managers[slot]||"").trim() || ("Team "+slot); }
+const roundOf = (l,o) => Math.ceil(o/l.teams);
+
+/* ============================================================
+   SURVIVAL — chance a player is still there at my next pick
+   Iterative rank-weighted model; tau = how by-the-book the room drafts.
+   ============================================================ */
+function survivalMap(l, avail, gap){
+  const surv = new Map();
+  avail.forEach(p=>surv.set(p.id,1));
+  if(gap<=0) return surv;
+  const tau = Math.max(1.5, l.tau);
+  const n = Math.min(avail.length, 90);
+  const base = [];
+  for(let i=0;i<n;i++) base.push(Math.exp(-i/tau));
+  const alive = new Array(n).fill(1);
+  for(let k=0;k<gap;k++){
+    let tot=0;
+    for(let i=0;i<n;i++) tot += base[i]*alive[i];
+    if(tot<=0) break;
+    for(let i=0;i<n;i++){
+      const pTaken = (base[i]*alive[i])/tot;
+      alive[i] = Math.max(0, alive[i]-pTaken);
+    }
+  }
+  for(let i=0;i<n;i++) surv.set(avail[i].id, Math.max(0,Math.min(1,alive[i])));
+  return surv;
+}
+
+/* ============================================================
+   MY ROSTER
+   ============================================================ */
+function myPlayers(l){
+  const byId = new Map(pool().map(p=>[p.id,p]));
+  return l.picks.filter(pk=>l.mySlots.includes(pk.slot))
+                .map(pk=>byId.get(pk.playerId)).filter(Boolean);
+}
+function fillLineup(l, players){
+  const r=l.roster, used=new Set(), slots=[];
+  const take = (allowed)=>{
+    let best=null;
+    players.forEach(p=>{
+      if(used.has(p.id) || !allowed.includes(p.pos)) return;
+      if(!best || adjustedPPG(p,l.scoring) > adjustedPPG(best,l.scoring)) best=p;
+    });
+    if(best) used.add(best.id);
+    return best;
+  };
+  POSITIONS.forEach(pos=>{
+    for(let i=0;i<(r[pos]||0);i++) slots.push({label:pos, player:take([pos])});
+  });
+  for(let i=0;i<(r.FLEX||0);i++) slots.push({label:"FLEX", player:take(FLEX_OK)});
+  for(let i=0;i<(r.SFLEX||0);i++) slots.push({label:"SFLEX", player:take(SUPER_OK)});
+  const bench = players.filter(p=>!used.has(p.id));
+  return {slots, bench};
+}
+function positionNeed(l, players, pos, myPicksLeft){
+  const r=l.roster;
+  const have = players.filter(p=>p.pos===pos).length;
+
+  // kicker, defense and the IDP slot: worthless until the roster forces your hand
+  if(pos==="K"||pos==="DST"||pos==="DP"){
+    if(have >= (r[pos]||0)) return 0.02;
+    const mustStillFill = ["K","DST","DP"].reduce((a,pp)=>
+      a + Math.max(0,(r[pp]||0)-players.filter(p=>p.pos===pp).length), 0);
+    return myPicksLeft <= mustStillFill ? 1.35 : 0.04;
+  }
+  if(pos==="QB"){
+    const need = (r.QB||0) + (r.SFLEX||0);
+    if(have < need) return 1;
+    if(have >= need+1) return 0.04;          // never one more QB than you can start
+    return (r.SFLEX>0) ? 0.45 : 0.16;
+  }
+  const primary = r[pos]||0;
+  if(have < primary) return 1;
+  // One backup tight end is plenty — they can't all start, and TE projections
+  // come from the fallback source, so don't let them soak up flex demand.
+  if(pos==="TE" && have >= primary+1) return 0.1;
+  const flexCap = (r.FLEX||0)+(r.SFLEX||0);
+  const flexers = FLEX_OK.reduce((a,pp)=>a+Math.max(0,players.filter(x=>x.pos===pp).length-(r[pp]||0)),0);
+  if(flexers < flexCap) return 0.7;
+  if(have < primary+2) return 0.32;
+  return 0.16;                                // deep enough here already
+}
+
+/* ============================================================
+   RECOMMENDATIONS
+   ============================================================ */
+function analyse(){
+  const l = L();
+  const repl = replacementLevels(l);
+  const taken = new Set(l.picks.map(p=>p.playerId));
+  const all = pool();
+  const avail = all.filter(p=>!taken.has(p.id));
+
+  const val = new Map();
+  all.forEach(p=>{
+    const a = adjustedPPG(p, l.scoring);
+    // a player who'll miss time is worth his per-game rate times the games he plays
+    const games = (p.gp!=null && p.gp<GAMES) ? p.gp : GAMES;
+    val.set(p.id, {adj:a, vor:a*games - (repl[p.pos]||0)*GAMES});
+  });
+
+  // The room drafts mostly off a generic consensus list, but league rules bend it —
+  // in a two-QB league nobody lets the QB1 slide to his overall rank. Blend the two.
+  const adpOrder = avail.slice().sort((a,b)=>marketRank(a)-marketRank(b));
+  const valOrder = avail.slice().sort((a,b)=>val.get(b.id).vor - val.get(a.id).vor);
+  const adpIdx = new Map(adpOrder.map((p,i)=>[p.id,i]));
+  const valIdx = new Map(valOrder.map((p,i)=>[p.id,i]));
+  const marketOrder = avail.slice().sort((a,b)=>
+    (0.62*adpIdx.get(a.id) + 0.38*valIdx.get(a.id)) -
+    (0.62*adpIdx.get(b.id) + 0.38*valIdx.get(b.id)));
+
+  const cur = currentPick(l);
+  const mine = l.mySlots.length ? nextMyPick(l, cur) : null;
+  const gap = mine ? (mine - cur) : 0;
+  const surv = survivalMap(l, marketOrder, gap);      // will he last until my next pick?
+
+  // Second horizon: if I pass on this position now, when do I get another shot?
+  // On the clock that's my following pick; otherwise it's my next one.
+  // With no slot set yet, assume a full round between turns so the board still advises.
+  const after = mine ? (gap===0 ? nextMyPick(l, cur+1) : mine) : null;
+  const gapAfter = after ? (after - cur) : (mine ? 0 : l.teams);
+  const survAfter = gapAfter===gap ? surv : survivalMap(l, marketOrder, gapAfter);
+
+  const roster = myPlayers(l);
+  // With no slot set yet, assume a full draft ahead of you — otherwise the
+  // "you're out of picks, take a kicker" rule fires and K/DST float to the top.
+  let myPicksLeft = mine ? 0 : l.rounds;
+  if(mine) for(let o=mine;o<=totalPicks(l);o++) if(isMine(l,o)) myPicksLeft++;
+  const myByes = {};
+  roster.forEach(p=>{ myByes[p.pos] = myByes[p.pos]||{}; myByes[p.pos][p.bye]=true; });
+
+  // expected best VOR still on the board at my NEXT pick, per position
+  const expBest = {};
+  POSITIONS.forEach(pos=>{
+    const list = avail.filter(p=>p.pos===pos)
+      .sort((a,b)=>val.get(b.id).vor - val.get(a.id).vor).slice(0,25);
+    let acc=0, gone=1;
+    list.forEach(p=>{
+      const s = survAfter.get(p.id) ?? 1;
+      acc += val.get(p.id).vor * s * gone;
+      gone *= (1-s);
+    });
+    expBest[pos]=acc;
+  });
+
+  // tier cliffs within each position
+  const cliff = new Set();
+  POSITIONS.forEach(pos=>{
+    const list = avail.filter(p=>p.pos===pos)
+      .sort((a,b)=>val.get(b.id).vor - val.get(a.id).vor);
+    for(let i=0;i<Math.min(list.length-1,14);i++){
+      const drop = val.get(list[i].id).vor - val.get(list[i+1].id).vor;
+      if(drop > 14) cliff.add(list[i].id);
+    }
+  });
+
+  const scored = avail.map(p=>{
+    const v = val.get(p.id).vor;
+    const need = positionNeed(l, roster, p.pos, myPicksLeft);
+    const s = surv.get(p.id) ?? 1;
+    // floor at a positive base first: multiplying a negative value by a low need
+    // would otherwise make players you don't want look better, not worse
+    const base = Math.max(0, v + 40);
+    // what this pick actually buys you over the fallback at the same position
+    const gain = v - (expBest[p.pos]||0);
+    const gainBase = Math.max(0, gain + 40);
+    const urgency = (1-(survAfter.get(p.id) ?? 1)) * Math.max(0, gain);
+    const cliffBonus = cliff.has(p.id) ? 9 : 0;
+    const byeHit = (myByes[p.pos] && myByes[p.pos][p.bye]) ? 6 : 0;
+    const score = need*(base*0.45 + gainBase*0.55) + urgency*0.5 + cliffBonus*need - byeHit;
+    return {p, vor:v, need, surv:s, gain, urgency, cliff:cliff.has(p.id), byeHit, score,
+            adj:val.get(p.id).adj};
+  }).sort((a,b)=>b.score-a.score);
+
+  return {l, avail, scored, val, surv, cur, mine, gap, roster, repl, expBest, cliff, myPicksLeft};
+}
+
+/* auction dollar value */
+function auctionValues(A){
+  const l=A.l;
+  const spots = l.teams * (Object.keys(l.roster).reduce((a,k)=>a+(l.roster[k]||0),0));
+  const money = l.teams*l.budget - spots;
+  const pos = A.scored.slice().sort((a,b)=>b.vor-a.vor).slice(0, spots);
+  const totVor = pos.reduce((a,x)=>a+Math.max(0,x.vor),0) || 1;
+  const m = new Map();
+  pos.forEach(x=> m.set(x.p.id, Math.max(1, Math.round(1 + (Math.max(0,x.vor)/totVor)*money))));
+  return m;
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+let filterPos="ALL", query="", showDrafted=false, setupOpen=false;
+
+function el(id){ return document.getElementById(id); }
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+function renderTabs(){
+  el("leaguetabs").innerHTML = S.leagues.map((lg,i)=>
+    `<button class="ltab ${i===S.active?"on":""}" data-l="${i}">${esc(lg.name||("League "+(i+1)))}</button>`
+  ).join("");
+  el("leaguetabs").querySelectorAll("button").forEach(b=>{
+    b.onclick=()=>{ S.active=+b.dataset.l; save(); renderAll(); };
+  });
+}
+
+function renderRibbon(A){
+  const l=A.l, cur=A.cur, host=el("ribbon");
+  if(!l.mySlots.length){
+    host.innerHTML = `<div class="clock"><div class="clocknum">–</div>
+      <div class="clocklab"><div class="l1">Set your draft slot in Settings to start</div></div></div>`;
+    return;
+  }
+  const done = cur > totalPicks(l);
+  let big, lab;
+  if(done){ big="✓"; lab="Draft complete"; }
+  else if(A.gap===0){ big="NOW"; lab="You're on the clock"; }
+  else { big=A.gap; lab= A.gap===1 ? "pick until you're up" : "picks until you're up"; }
+
+  const start = Math.max(1, cur-1);
+  const end = Math.min(totalPicks(l), start+23);
+  let flow="";
+  for(let o=start;o<=end;o++){
+    const slot=slotOfPick(l,o), me=l.mySlots.includes(slot);
+    const pk=l.picks[o-1];
+    flow += `<div class="fp ${me?"mine":""} ${pk?"done":""} ${o===cur?"oc":""}">
+      <div class="n">${roundOf(l,o)}.${String(o-(roundOf(l,o)-1)*l.teams).padStart(2,"0")}</div>
+      <div class="t">${esc(pk ? pk.name.split(" ").slice(-1)[0] : teamName(l,slot))}</div></div>`;
+  }
+  host.innerHTML =
+    `<div class="clock">
+       <div class="clocknum ${A.gap===0&&!done?"now":""} disp">${big}</div>
+       <div class="clocklab"><div class="l1">${lab}</div></div>
+     </div>
+     <div class="flow">${flow}</div>`;
+}
+
+function dotColor(s){ return s>0.66?"var(--good)":s>0.33?"var(--warn)":"var(--bad)"; }
+
+function renderBoard(A){
+  const l=A.l;
+  el("posChips").innerHTML = ["ALL",...POSITIONS].map(p=>
+    `<button class="chip ${filterPos===p?"on":""}" data-p="${p}">${p}</button>`).join("");
+  el("posChips").querySelectorAll("button").forEach(b=>
+    b.onclick=()=>{ filterPos=b.dataset.p; renderAll(); });
+
+  const taken = new Map(l.picks.map(p=>[p.playerId,p]));
+  const auction = l.type==="auction" ? auctionValues(A) : null;
+  const q = query.trim().toLowerCase();
+  let list = A.scored;
+  if(showDrafted){
+    const byId=new Map(pool().map(p=>[p.id,p]));
+    const extra = l.picks.map(pk=>({p:byId.get(pk.playerId), vor:0, surv:0, drafted:pk}))
+                         .filter(x=>x.p);
+    list = A.scored.concat(extra);
+  }
+  const rows = list.filter(x=>{
+    if(filterPos!=="ALL" && x.p.pos!==filterPos) return false;
+    if(q && !(x.p.name.toLowerCase().includes(q) || x.p.team.toLowerCase().includes(q))) return false;
+    return true;
+  }).slice(0,220);
+
+  el("boardSub").textContent =
+    `${A.avail.length} available · left column is ADP · scored for ${l.scoring.ppr===1?"full PPR":l.scoring.ppr===0.5?"half PPR":"standard"}`;
+
+  el("rows").innerHTML = rows.map(x=>{
+    const p=x.p, d=taken.get(p.id);
+    const val = auction ? ("$"+(auction.get(p.id)||1)) : (x.vor>0? "+"+x.vor.toFixed(0) : x.vor.toFixed(0));
+    return `<div class="row p-${p.pos} ${x.cliff?"cliff":""}" ${d?'style="opacity:.42"':""}>
+      <div class="rk">${p.espn!=null&&p.espn<170?p.espn.toFixed(0):"–"}</div>
+      <div>
+        <div class="nm" data-info="${p.id}">${esc(p.name)}</div>
+        <div class="meta"><span class="pos ${p.pos}">${p.pos}</span> ${esc(p.team)}
+          <span>bye ${p.bye||"–"}</span>
+          ${x.cliff?'<span class="tag hot">tier ends</span>':""}
+          ${p.note?`<span class="tag hurt">${esc(p.note)}</span>`:""}
+          ${d?`<span class="tag">${esc(teamName(l,d.slot))}</span>`:
+              `<button class="assign" data-assign="${p.id}">assign…</button>`}
+        </div>
+      </div>
+      <div class="num">${x.adj?x.adj.toFixed(1):""}</div>
+      <div class="num">${d?"":val}</div>
+      <div class="surv">${d?"":`<span class="dot" style="background:${dotColor(x.surv)}"></span>${Math.round(x.surv*100)}%`}</div>
+      <div>${d?"":`<button class="take" data-take="${p.id}" title="Log this pick">→</button>`}</div>
+    </div>`;
+  }).join("") || `<div style="padding:22px;text-align:center;color:var(--muted)">No players match that search.</div>`;
+
+  el("rows").querySelectorAll("[data-take]").forEach(b=>
+    b.onclick=()=>draftPlayer(+b.dataset.take,null));
+  el("rows").querySelectorAll("[data-assign]").forEach(b=>
+    b.onclick=()=>assignDialog(+b.dataset.assign));
+  el("rows").querySelectorAll("[data-info]").forEach(b=>
+    b.onclick=()=>infoDialog(+b.dataset.info, A));
+}
+
+function renderRecs(A){
+  const l=A.l;
+  const head = el("recHead");
+  if(!l.mySlots.length){ head.textContent="Best available"; }
+  else if(A.gap===0){ head.innerHTML=`Take one of these <span class="sub">you're on the clock</span>`; }
+  else { head.innerHTML=`Plan for pick ${A.mine||"–"} <span class="sub">${A.gap} away</span>`; }
+
+  const auction = l.type==="auction" ? auctionValues(A) : null;
+  const top = A.scored.filter(x=>x.need>0.05).slice(0,5);
+  const maxScore = top.length? top[0].score : 1;
+
+  el("recs").innerHTML = top.map((x,i)=>{
+    const bits=[];
+    if(x.cliff) bits.push(`last of the ${x.p.pos} tier`);
+    if(A.gap>0) bits.push(`${Math.round(x.surv*100)}% to last until your pick`);
+    if(x.urgency>6) bits.push(`+${x.urgency.toFixed(0)} pts over what you'd get by waiting`);
+    if(x.need>=1) bits.push(`fills a starting ${x.p.pos} spot`);
+    else if(x.need<0.4) bits.push(`bench depth — you're set at ${x.p.pos}`);
+    if(x.byeHit) bits.push(`shares a bye with your other ${x.p.pos}`);
+    if(x.p.note) bits.push(x.p.note);
+    if(auction) bits.push(`worth about $${auction.get(x.p.id)||1}`);
+    return `<div class="rec p-${x.p.pos} ${i===0?"top":""}">
+      <div class="rechead"><span class="recrank">${i+1}</span>
+        <span class="recname">${esc(x.p.name)}</span>
+        <span class="pos ${x.p.pos}">${x.p.pos}</span>
+        <span class="meta">${esc(x.p.team)} · bye ${x.p.bye||"–"}</span></div>
+      <div class="recwhy">${bits.join(" · ")}</div>
+      <div class="bars"><i style="width:${Math.max(6,Math.round(100*x.score/maxScore))}%"></i></div>
+      <button class="recbtn" data-take="${x.p.id}">${A.gap===0?"Draft him":"Log pick"}</button>
+    </div>`;
+  }).join("") || `<div style="padding:20px;color:var(--muted)">Board's empty — the draft is done.</div>`;
+
+  el("recs").querySelectorAll("[data-take]").forEach(b=>
+    b.onclick=()=>draftPlayer(+b.dataset.take,null));
+}
+
+function renderRoster(A){
+  const l=A.l, {slots,bench} = fillLineup(l, A.roster);
+  const byeCount={};
+  A.roster.forEach(p=>{ if(p.bye) byeCount[p.bye]=(byeCount[p.bye]||0)+1; });
+  const clash = Object.entries(byeCount).filter(([w,c])=>c>=3).map(([w,c])=>`wk ${w}: ${c}`);
+  el("rosterSub").textContent = `${A.roster.length} picked`;
+  el("roster").innerHTML =
+    slots.map(s=>`<div class="slotline">
+        <span class="sl">${s.label}</span>
+        <span class="${s.player?"":"empty"}">${s.player?esc(s.player.name):"open"}</span>
+        <span class="meta">${s.player?`${s.player.team} · ${s.player.bye}`:""}</span>
+      </div>`).join("") +
+    (bench.length? `<div class="slotline"><span class="sl">Bench</span>
+        <span>${bench.map(p=>esc(p.name)).join(", ")}</span><span></span></div>`:"") +
+    (clash.length? `<div class="slotline"><span class="sl">Byes</span>
+        <span class="byewarn">${clash.join(" · ")} — stacked</span><span></span></div>`:"");
+}
+
+function renderRuns(A){
+  const l=A.l, recent=l.picks.slice(-12);
+  const c={};
+  recent.forEach(p=>{ c[p.pos]=(c[p.pos]||0)+1; });
+  const max = Math.max(1,...Object.values(c));
+  el("runs").innerHTML = POSITIONS.map(pos=>{
+    const n=c[pos]||0;
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+      <span class="pos ${pos}" style="width:34px;text-align:center">${pos}</span>
+      <div class="bars" style="flex:1;margin:0"><i style="width:${Math.round(100*n/max)}%;background:var(--${pos.toLowerCase()})"></i></div>
+      <span class="mono" style="font-size:11.5px;width:14px;text-align:right">${n}</span></div>`;
+  }).join("") + (recent.length<3?`<div class="hint">Fills in as picks are logged.</div>`:"");
+}
+
+function renderRoom(A){
+  const l=A.l, byId=new Map(pool().map(p=>[p.id,p]));
+  const rows=[];
+  for(let s=1;s<=l.teams;s++){
+    if(l.mySlots.includes(s)) continue;
+    const players = l.picks.filter(pk=>pk.slot===s).map(pk=>byId.get(pk.playerId)).filter(Boolean);
+    let next=null, left=0;
+    for(let o=A.cur;o<=totalPicks(l);o++){
+      if(slotOfPick(l,o)===s && !isMine(l,o)){ if(next===null) next=o; left++; }
+    }
+    if(next===null) continue;
+    rows.push({s,next,players,left,targets:[]});
+  }
+  rows.sort((a,b)=>a.next-b.next);
+
+  // Walk the room in pick order. Once a team is likely to take someone, he's
+  // off the table for everyone behind them — otherwise every row lists the same back.
+  const claimed = new Set();
+  rows.forEach(r=>{
+    r.targets = A.avail.filter(p=>!claimed.has(p.id)).map(p=>{
+      const v = A.val.get(p.id).vor;
+      const need = positionNeed(l, r.players, p.pos, r.left);
+      return {p, need, v, score: Math.max(0,v+40)*need + (A.cliff.has(p.id)?9:0)*need};
+    }).filter(t=>t.need>0.05).sort((a,b)=>b.score-a.score).slice(0,3);
+    if(r.targets.length) claimed.add(r.targets[0].p.id);
+  });
+
+  el("roomSub").textContent = A.mine
+    ? "highlighted teams pick before you do"
+    : "who each team is likely eyeing, from their roster holes and the board";
+
+  el("roomBody").innerHTML = rows.map(r=>{
+    const shape = POSITIONS.map(pos=>{
+      const n=r.players.filter(p=>p.pos===pos).length;
+      return n? `<span style="background:var(--${pos.toLowerCase()})">${n}${pos}</span>` : null;
+    }).filter(Boolean).join("") || `<span style="background:var(--line);color:var(--muted)">nothing yet</span>`;
+    const tg = r.targets.map(t=>{
+      const why = t.need>=1 ? `needs a starting ${t.p.pos}`
+                : A.cliff.has(t.p.id) ? `${t.p.pos} tier ends here`
+                : t.need>=0.7 ? `flex value` : `best left on their board`;
+      return `<div class="tgt"><span class="pos ${t.p.pos}">${t.p.pos}</span>
+        <span><b>${esc(t.p.name)}</b> <span class="r">— ${why}</span></span></div>`;
+    }).join("") || `<span class="meta">board's picked over</span>`;
+    return `<tr class="${(A.mine && r.next<A.mine)?"soon":""}">
+      <td class="who">${esc(teamName(l,r.s))}</td>
+      <td class="pk">${roundOf(l,r.next)}.${String(r.next-(roundOf(l,r.next)-1)*l.teams).padStart(2,"0")}
+        <br><span style="font-size:10.5px">${r.next-A.cur} away</span></td>
+      <td class="hidesm"><div class="shape">${shape}</div></td>
+      <td>${tg}</td></tr>`;
+  }).join("") || `<tr><td colspan="4" style="padding:16px;color:var(--muted)">Tick your draft slot in Settings and the rest of the room shows up here.</td></tr>`;
+}
+
+function renderLog(A){
+  const l=A.l;
+  el("logSub").textContent = `${l.picks.length} of ${totalPicks(l)}`;
+  el("log").innerHTML = l.picks.slice().reverse().map(pk=>
+    `<div class="logrow">
+      <span class="p">${roundOf(l,pk.overall)}.${String(pk.overall-(roundOf(l,pk.overall)-1)*l.teams).padStart(2,"0")}</span>
+      <span>${esc(pk.name)} <span class="pos ${pk.pos}">${pk.pos}</span></span>
+      <span class="meta">${esc(teamName(l,pk.slot))}${pk.price?` · $${pk.price}`:""}</span>
+    </div>`).join("") || `<div style="padding:14px;color:var(--muted)">No picks logged yet. Tap → next to a player as each name comes off the board.</div>`;
+}
+
+function renderFooter(){
+  el("footer").innerHTML =
+    `The ADP column is real market data — a nine-platform consensus including ESPN, pulled 31 Aug 2026, after final roster cuts — and it drives the survival odds. ` +
+    `Running backs and receivers are scored from projected receptions, yards and touchdowns, so your scoring settings are applied exactly rather than estimated. ` +
+    `Quarterbacks and tight ends are computed from passing and receiving projections too, so a 6-point passing TD is applied exactly. ` +
+    `Only kickers, defenses and a handful of backups fall back to a converted per-game number. Byes from the 2026 NFL schedule. ` +
+    `Everything saves to this browser automatically — reload freely, but use Data → Export before switching devices.`;
+}
+
+function renderAll(){
+  renderTabs();
+  const A = analyse();
+  el("setupView").classList.toggle("hidden", !setupOpen);
+  el("draftView").classList.toggle("hidden", setupOpen);
+  renderRibbon(A);
+  if(setupOpen){ renderSetup(); }
+  else { renderBoard(A); renderRecs(A); renderRoster(A); renderRuns(A); renderRoom(A); renderLog(A); }
+  el("roomCard").classList.toggle("hidden", setupOpen);
+  renderFooter();
+  save();
+}
+
+/* ============================================================
+   ACTIONS
+   ============================================================ */
+function draftPlayer(pid, slotOverride){
+  const l=L(), o=currentPick(l);
+  if(o>totalPicks(l)){ return toast("Every pick is logged. Add rounds in Settings if the draft ran long."); }
+  const p = pool().find(x=>x.id===pid);
+  if(!p) return;
+  if(l.picks.some(x=>x.playerId===pid)) return toast(p.name+" is already off the board.");
+  const natural = slotOfPick(l,o);
+  // a pick you traded for still belongs to your roster, not its original owner
+  const slot = slotOverride ||
+    ((isMine(l,o) && !l.mySlots.includes(natural)) ? (l.mySlots[0] || natural) : natural);
+  let price=null;
+  if(l.type==="auction"){
+    const v = prompt(`Winning bid for ${p.name}?`, "1");
+    if(v===null) return;
+    price = Math.max(0, parseInt(v,10)||0);
+  }
+  l.picks.push({overall:o, slot, playerId:pid, name:p.name, pos:p.pos, price});
+  save(); renderAll();
+}
+function assignDialog(pid){
+  const l=L(), p=pool().find(x=>x.id===pid);
+  const opts = Array.from({length:l.teams},(_,i)=>i+1)
+    .map(s=>`<option value="${s}">${esc(teamName(l,s))}</option>`).join("");
+  openDialog(`<h4>Assign ${esc(p.name)}</h4>
+    <p style="margin:0 0 10px;color:var(--muted);font-size:12.5px">Use this when you fall behind and picks land out of order.</p>
+    <select id="asel" style="width:100%">${opts}</select>
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn ghost" data-close>Cancel</button>
+      <button class="btn" id="ago">Log pick</button></div>`);
+  el("ago").onclick=()=>{ const s=+el("asel").value; el("dlg").close(); draftPlayer(pid,s); };
+}
+function infoDialog(pid, A){
+  const p=pool().find(x=>x.id===pid);
+  const x=A.scored.find(y=>y.p.id===pid);
+  const l=A.l;
+  const same = A.avail.filter(y=>y.pos===p.pos)
+    .sort((a,b)=>a.ecr-b.ecr).slice(0,6)
+    .map(y=>`<li>${esc(y.name)} <span class="mono" style="color:var(--muted)">#${y.ecr}</span></li>`).join("");
+  openDialog(`<h4>${esc(p.name)} · ${p.pos} ${esc(p.team)}</h4>
+    <div class="grid2" style="margin-bottom:10px">
+      <div><label class="f">Overall rank</label><b class="mono">${p.ecr}</b></div>
+      <div><label class="f">Proj / game here</label><b class="mono">${x?x.adj.toFixed(1):adjustedPPG(p,l.scoring).toFixed(1)}</b></div>
+      <div><label class="f">Over replacement</label><b class="mono">${x?(x.vor>0?"+":"")+x.vor.toFixed(0):"–"}</b></div>
+      <div><label class="f">Bye</label><b class="mono">Week ${p.bye||"–"}</b></div>
+    </div>
+    <label class="f">Next ${p.pos}s on the board</label><ul style="margin:4px 0 0;padding-left:18px">${same}</ul>
+    <div style="margin-top:14px;display:flex;justify-content:flex-end"><button class="btn ghost" data-close>Close</button></div>`);
+}
+function undo(){
+  const l=L();
+  if(!l.picks.length) return toast("Nothing to undo.");
+  const last=l.picks.pop();
+  save(); renderAll(); toast(`Put ${last.name} back on the board.`);
+}
+function toast(msg){
+  let t=el("toast");
+  if(!t){ t=document.createElement("div"); t.id="toast";
+    t.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:22px;background:var(--ink);color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;z-index:99;box-shadow:0 4px 14px rgba(0,0,0,.18)";
+    document.body.appendChild(t); }
+  t.textContent=msg; t.style.opacity="1";
+  clearTimeout(t._h); t._h=setTimeout(()=>t.style.opacity="0",2200);
+}
+function openDialog(html){
+  el("dlgBody").innerHTML=html;
+  el("dlg").showModal();
+  el("dlgBody").querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>el("dlg").close());
+}
+
+/* ============================================================
+   SETUP
+   ============================================================ */
+function renderSetup(){
+  const l=L();
+  el("setupName").textContent = l.name;
+  const r=l.roster, sc=l.scoring;
+  const slotCards = Array.from({length:l.teams},(_,i)=>{
+    const s=i+1, mine=l.mySlots.includes(s);
+    return `<div class="slotpick ${mine?"mine":""}">
+      <span class="n">${s}</span>
+      <input type="text" data-mgr="${s}" value="${esc(l.managers[s]||"")}" placeholder="Team ${s}">
+      <label style="font-size:11px;display:flex;align-items:center;gap:3px;color:var(--muted)">
+        <input type="checkbox" data-mine="${s}" ${mine?"checked":""}> mine</label>
+    </div>`;
+  }).join("");
+
+  const pickGrid = Array.from({length:l.rounds},(_,ri)=>{
+    const r=ri+1;
+    const cells = Array.from({length:l.teams},(_,ci)=>{
+      const o=(r-1)*l.teams+ci+1;
+      return `<button class="pgc ${isMine(l,o)?"on":""} ${o<currentPick(l)?"gone":""}"
+        data-pick="${o}" title="Pick ${r}.${String(ci+1).padStart(2,"0")} — ${esc(teamName(l,slotOfPick(l,o)))}">${ci+1}</button>`;
+    }).join("");
+    return `<div class="pgrow"><span class="pgr">R${r}</span>${cells}</div>`;
+  }).join("");
+
+  el("setupBody").innerHTML = `
+  <fieldset><legend>League</legend>
+    <div class="grid2">
+      <div class="f"><label class="f">League name</label><input type="text" data-k="name" value="${esc(l.name)}"></div>
+      <div class="f"><label class="f">Teams</label><input type="number" data-k="teams" min="4" max="20" value="${l.teams}"></div>
+      <div class="f"><label class="f">Rounds</label><input type="number" data-k="rounds" min="1" max="30" value="${l.rounds}"></div>
+      <div class="f"><label class="f">Format</label><select data-k="type">
+        <option value="snake"${l.type==="snake"?" selected":""}>Snake</option>
+        <option value="linear"${l.type==="linear"?" selected":""}>Linear</option>
+        <option value="auction"${l.type==="auction"?" selected":""}>Auction</option></select></div>
+      ${l.type==="auction"?`<div class="f"><label class="f">Budget per team</label><input type="number" data-k="budget" value="${l.budget}"></div>`:""}
+      <div class="f"><label class="f">Room drafts by the rankings</label>
+        <select data-k="tau">
+          <option value="3"${l.tau==3?" selected":""}>Very chalky</option>
+          <option value="5"${l.tau==5?" selected":""}>Normal</option>
+          <option value="8"${l.tau==8?" selected":""}>Unpredictable</option>
+        </select></div>
+    </div>
+  </fieldset>
+
+  <fieldset><legend>Scoring</legend>
+    <div class="grid2">
+      <div class="f"><label class="f">Points per reception</label><select data-s="ppr">
+        <option value="1"${sc.ppr==1?" selected":""}>Full PPR (1.0)</option>
+        <option value="0.5"${sc.ppr==0.5?" selected":""}>Half PPR (0.5)</option>
+        <option value="0"${sc.ppr==0?" selected":""}>Standard (0)</option></select></div>
+      <div class="f"><label class="f">TE premium (extra per catch)</label><input type="number" step="0.25" data-s="tePremium" value="${sc.tePremium}"></div>
+      <div class="f"><label class="f">Passing TD</label><select data-s="passTD">
+        <option value="4"${sc.passTD==4?" selected":""}>4 points</option>
+        <option value="6"${sc.passTD==6?" selected":""}>6 points</option></select></div>
+      <div class="f"><label class="f">Yards per passing point</label><select data-s="passYdPerPt">
+        <option value="25"${sc.passYdPerPt==25?" selected":""}>25 (standard)</option>
+        <option value="20"${sc.passYdPerPt==20?" selected":""}>20</option></select></div>
+    </div>
+    <div class="hint">Changing these re-ranks the whole board, it doesn't just relabel it — receptions and passing volume are estimated from each player's projection.</div>
+  </fieldset>
+
+  <fieldset><legend>Starting lineup</legend>
+    <div class="grid2">
+      ${["QB","RB","WR","TE","FLEX","SFLEX","DP","K","DST","BN"].map(k=>
+        `<div class="f"><label class="f">${k==="SFLEX"?"Superflex":k==="DP"?"Def. player":k==="BN"?"Bench":k}</label>
+         <input type="number" min="0" max="9" data-r="${k}" value="${r[k]||0}"></div>`).join("")}
+    </div>
+    <div class="hint">Superflex counts a second QB-eligible starter — it pushes quarterbacks way up the board.</div>
+  </fieldset>
+
+  <fieldset><legend>Draft order and your picks</legend>
+    <div class="slotgrid">${slotCards}</div>
+    <div class="hint">Tick the slot that is your team. Traded picks are handled in the grid below.</div>
+  </fieldset>
+
+  <fieldset><legend>Your picks, round by round</legend>
+    <div class="pickgrid">${pickGrid}</div>
+    <div class="hint">Gold cells are yours. Traded for a second first-rounder? Tick it and untick whatever you gave up${
+      Array.isArray(l.ownPicks)?"":" — the grid starts on your normal slot"}. The clock, the survival odds and the recommendations all follow this grid.</div>
+    <button class="iconbtn" id="resetOwn" style="margin-top:8px">Back to my normal slot</button>
+  </fieldset>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn" id="doneSetup">Back to the board</button>
+    ${PRESETS[S.active]?`<button class="iconbtn" id="loadPreset">Reload ${esc(PRESETS[S.active].name)} settings</button>`:""}
+    <button class="iconbtn warn" id="resetPicks">Clear this draft's picks</button>
+  </div>`;
+
+  const body = el("setupBody");
+  body.querySelectorAll("[data-k]").forEach(inp=>{
+    inp.onchange=()=>{
+      const k=inp.dataset.k;
+      l[k] = (k==="name"||k==="type") ? inp.value : (parseFloat(inp.value)||0);
+      if(k==="teams"){ l.mySlots = l.mySlots.filter(s=>s<=l.teams); }
+      save(); renderAll();
+    };
+  });
+  body.querySelectorAll("[data-s]").forEach(inp=>{
+    inp.onchange=()=>{ l.scoring[inp.dataset.s]=parseFloat(inp.value)||0; save(); renderAll(); };
+  });
+  body.querySelectorAll("[data-r]").forEach(inp=>{
+    inp.onchange=()=>{ l.roster[inp.dataset.r]=Math.max(0,parseInt(inp.value,10)||0); save(); renderAll(); };
+  });
+  body.querySelectorAll("[data-mgr]").forEach(inp=>{
+    inp.onchange=()=>{ l.managers[inp.dataset.mgr]=inp.value; save(); renderTabs(); };
+  });
+  body.querySelectorAll("[data-mine]").forEach(cb=>{
+    cb.onchange=()=>{
+      const s=+cb.dataset.mine;
+      l.mySlots = cb.checked ? Array.from(new Set([...l.mySlots,s])).sort((a,b)=>a-b)
+                             : l.mySlots.filter(x=>x!==s);
+      save(); renderAll();
+    };
+  });
+  body.querySelectorAll("[data-pick]").forEach(b=>{
+    b.onclick=()=>{
+      const o=+b.dataset.pick;
+      if(!Array.isArray(l.ownPicks)){          // freeze the current slot into an explicit list
+        const seed=[];                          // build it BEFORE assigning, or isMine reads the empty list
+        for(let k=1;k<=totalPicks(l);k++) if(isMine(l,k)) seed.push(k);
+        l.ownPicks=seed;
+      }
+      const i=l.ownPicks.indexOf(o);
+      if(i>=0) l.ownPicks.splice(i,1); else l.ownPicks.push(o);
+      l.ownPicks.sort((a,b)=>a-b);
+      if(!l.mySlots.length && l.ownPicks.length) l.mySlots=[slotOfPick(l,l.ownPicks[0])];
+      save(); renderAll();
+    };
+  });
+  el("resetOwn").onclick=()=>{ l.ownPicks=null; save(); renderAll(); toast("Back to your normal slot."); };
+
+  el("doneSetup").onclick=()=>{ setupOpen=false; renderAll(); };
+  const lp = el("loadPreset");
+  if(lp) lp.onclick=()=>{
+    if(!confirm("Reload the saved settings for "+PRESETS[S.active].name+"? Logged picks and your draft slot stay as they are.")) return;
+    const fresh = applyPreset(S.active);
+    const keep = {mySlots:l.mySlots, picks:l.picks, overrides:l.overrides, customPool:l.customPool};
+    S.leagues[S.active] = Object.assign(fresh, keep);
+    save(); renderAll(); toast("Settings reloaded.");
+  };
+  el("resetPicks").onclick=()=>{
+    if(confirm("Clear every logged pick in "+l.name+"? Settings stay.")){ l.picks=[]; save(); renderAll(); }
+  };
+}
+
+/* ============================================================
+   DATA: export / import / custom rankings
+   ============================================================ */
+function dataDialog(){
+  const l=L();
+  openDialog(`<h4>Data</h4>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="iconbtn" id="dExp">Export all three leagues</button>
+      <button class="iconbtn" id="dImp">Import a saved file</button>
+    </div>
+    <label class="f">Refresh the rankings for ${esc(l.name)}</label>
+    <p style="margin:2px 0 6px;color:var(--muted);font-size:12px">
+      One player per line, best first:<br>
+      <span class="mono">Name|POS|TEAM|ppg|espnADP|consADP|rec|recYds|recTD|rushYds|rushTD|fum|passYds|passTD|int</span><br>
+      Only the first four are required — leave the rest empty and that player falls back to a converted
+      per-game number. Paste a fresh board the morning of the draft and everything recalculates.</p>
+    <textarea id="dPool" placeholder="Ja'Marr Chase|WR|CIN|23.5"></textarea>
+    <div style="margin-top:10px;display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap">
+      <button class="iconbtn" id="dReset">Back to the built-in board</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn ghost" data-close>Close</button>
+        <button class="btn" id="dSave">Use these rankings</button>
+      </div>
+    </div>
+    <input type="file" id="dFile" accept="application/json" class="hidden">`);
+
+  el("dExp").onclick=()=>{
+    const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="draft-room-"+new Date().toISOString().slice(0,10)+".json";
+    a.click(); URL.revokeObjectURL(a.href);
+  };
+  el("dImp").onclick=()=>el("dFile").click();
+  el("dFile").onchange=e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const rd=new FileReader();
+    rd.onload=()=>{
+      try{
+        const p=JSON.parse(rd.result);
+        if(!p.leagues || p.leagues.length!==3) throw new Error("bad shape");
+        S=p; save(); el("dlg").close(); renderAll(); toast("Loaded that file.");
+      }catch(err){ toast("That file isn't a Draft Room export."); }
+    };
+    rd.readAsText(f);
+  };
+  el("dSave").onclick=()=>{
+    const txt=el("dPool").value.trim();
+    if(!txt) return toast("Paste some rankings first.");
+    try{
+      const parsed=parsePool(txt);
+      if(parsed.length<20) throw new Error("too short");
+      if(parsed.some(p=>!p.name || !POSITIONS.includes(p.pos))) throw new Error("bad rows");
+      l.customPool=parsed; l.picks=[]; save(); el("dlg").close(); renderAll();
+      toast(`Loaded ${parsed.length} players. Picks were cleared to keep IDs in sync.`);
+    }catch(err){ toast("Couldn't read that — check the Name|POS|TEAM|PPG format."); }
+  };
+  el("dReset").onclick=()=>{
+    l.customPool=null; l.picks=[]; save(); el("dlg").close(); renderAll();
+    toast("Back on the built-in board.");
+  };
+}
+
+/* ============================================================
+   WIRE UP
+   ============================================================ */
+el("btnSetup").onclick=()=>{ setupOpen=!setupOpen; renderAll(); };
+el("btnUndo").onclick=undo;
+el("btnData").onclick=dataDialog;
+el("search").oninput=e=>{ query=e.target.value; renderAll(); };
+el("showDrafted").onchange=e=>{ showDrafted=e.target.checked; renderAll(); };
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA"||e.target.tagName==="SELECT") return;
+  if(e.key==="/"){ e.preventDefault(); el("search").focus(); }
+  if((e.key==="z"||e.key==="Z") && (e.metaKey||e.ctrlKey)){ e.preventDefault(); undo(); }
+});
+
+if(!L().mySlots.length && !L().picks.length) setupOpen = true;
+renderAll();
+</script>
+</body>
+</html>
